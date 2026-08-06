@@ -1,31 +1,42 @@
 # BlackSocial
 
-Мини-мессенджер в духе Telegram, но со своим визуальным языком.  
-Стек: чистый HTML / CSS / JS + Firebase (Auth + Firestore). Без сборщиков — просто открыл и работает.
+Мини-мессенджер (Telegram-like) на чистом HTML/CSS/JS + Firebase.
 
-## Что умеет
-
-- Регистрация и вход по email + паролю, уникальный юзернейм
-- Список чатов в реальном времени
-- Личные чаты (поиск по юзернейму)
-- Группы (несколько участников)
-- Каналы (писать могут только админы)
+- Личные чаты, группы, каналы
 - Сообщения в реальном времени
-- Разделители дат («Сегодня», «Вчера»…)
-- Адаптив под мобильные (кнопка «назад», скрытие списка)
-- Тёмная тема в стиле WhatsApp/Telegram, но со своим акцентом (зелёный)
+- **Загрузка фото** (Firebase Storage)
+- Тёмная тема, мобильная вёрстка
 
-## Что нужно сделать в Firebase (один раз)
+## Важно: деплой на GitHub Pages
 
-Проект `black-social-af844` уже подключён, но в консоли Firebase нужно:
+GitHub Actions «pages build and deployment» часто висит в очереди на free-tier.  
+**Не используй GitHub Actions для Pages.** Делай так:
+
+1. Залей файлы в репозиторий **в корень** (или в папку `/docs`).
+2. **Settings → Pages → Build and deployment → Source: Deploy from a branch**
+3. Branch: `main` (или `master`), folder: `/ (root)` или `/docs`
+4. Save
+
+Сайт появится через 1–2 минуты на `https://USERNAME.github.io/REPO/`.
+
+### Firebase: разреши домен Pages
+
+**Authentication → Settings → Authorized domains → Add domain**  
+добавь: `USERNAME.github.io`
+
+Без этого вход/регистрация на GitHub Pages не будут работать.
+
+---
+
+## Настройка Firebase (один раз)
 
 ### 1. Authentication
 **Authentication → Sign-in method → Email/Password → Enable**
 
 ### 2. Firestore
-**Firestore Database → Create database** (production mode, любой регион)
+**Firestore Database → Create database** (production)
 
-### 3. Rules — вставь и опубликуй:
+**Rules** → вставь и Publish:
 
 ```
 rules_version = '2';
@@ -54,39 +65,49 @@ service cloud.firestore {
 }
 ```
 
-### 4. Индекс
-При первом поиске по юзернейму Firebase предложит создать композитный индекс — просто кликни «Create index».
+### 3. Storage (для фото)
+**Storage → Get started** (если ещё не включен)
 
-## Как запустить
+**Rules** → вставь и Publish:
 
-Firebase Auth не работает через `file://`. Запусти локальный сервер:
+```
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /chats/{chatId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+                   && request.resource.size < 8 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+  }
+}
+```
+
+### 4. Индекс Firestore
+При первом поиске по юзернейму Firebase покажет ссылку «Create index» — кликни один раз.
+
+---
+
+## Локальный запуск
 
 ```bash
-cd blacksocial
 npx serve .
 # или
 python3 -m http.server 8080
 ```
 
-Открой `http://localhost:3000` (или `:8080`).
+Открой `http://localhost:3000` (или `:8080`).  
+`file://` не работает с Firebase Auth.
 
-## Структура
+## Файлы
 
 ```
-blacksocial/
-├── index.html
-├── style.css
-├── app.js
-├── firebase-config.js
-└── README.md
+index.html
+style.css
+app.js
+firebase-config.js
+README.md
 ```
 
-## Что можно добавить дальше
-
-- Фото / файлы (Firebase Storage)
-- Онлайн-статус
-- Push-уведомления
-- Редактирование / удаление сообщений
-- Пагинация истории
-- Несколько админов в каналах
-- Закреплённые сообщения
+Никакой сборки не нужно — это статика.
