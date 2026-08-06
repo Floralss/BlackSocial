@@ -119,6 +119,7 @@ html, body {
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .auth-error { color: var(--danger); font-size: 13px; min-height: 18px; text-align: center; }
+.auth-hint { color: var(--text-2); font-size: 12.5px; text-align: center; margin-top: 4px; }
 
 /* ===== APP ===== */
 .app { display: flex; height: 100%; }
@@ -518,6 +519,7 @@ html, body {
 </head>
 <body>
 
+
 <!-- AUTH -->
 <div id="authScreen" class="auth-screen">
   <div class="auth-box">
@@ -541,6 +543,7 @@ html, body {
       </div>
       <button type="submit" class="btn-primary">Войти</button>
       <div class="auth-error" id="loginError"></div>
+      <div class="auth-hint" id="loginHint">Нет аккаунта? Нажми «Регистрация» сверху</div>
     </form>
     <form id="registerForm" class="auth-form hidden">
       <div class="field">
@@ -698,11 +701,20 @@ html, body {
   <img id="lightboxImg" src="" alt="">
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-<script>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  getFirestore, collection, doc, getDoc, setDoc, addDoc, updateDoc, query, where, orderBy, limit, onSnapshot, getDocs, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import {
+  getStorage, ref, uploadBytes, getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
+
 const firebaseConfig = {
   apiKey: "AIzaSyBGFONUBgybQr0KCn_Ao_ZT9HkWVSU4jEw",
   authDomain: "black-social-af844.firebaseapp.com",
@@ -712,13 +724,12 @@ const firebaseConfig = {
   appId: "1:296441938682:web:096a3e642bd00116f7bf43",
   measurementId: "G-2PX2QMR8HS"
 };
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-const storage = firebase.storage();
 
-
-/* ============ BlackSocial ============ */
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+// ВАЖНО: твоя база называется "default", не "(default)"
+const db = getFirestore(app, "default");
+const storage = getStorage(app);
 
 let currentUser = null;
 let currentProfile = null;
@@ -735,33 +746,33 @@ const MAX_IMAGES = 5;
 
 function hashColor(str) {
   let hash = 0;
-  for (let i = 0; i < (str || '').length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < (str || "").length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
   return `hsl(${Math.abs(hash) % 360}, 55%, 42%)`;
 }
 function initials(name) {
-  if (!name) return '?';
-  return name.trim().split(/\s+/).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+  if (!name) return "?";
+  return name.trim().split(/\s+/).slice(0, 2).map(w => w[0].toUpperCase()).join("");
 }
 function fmtTime(ts) {
-  if (!ts) return '';
+  if (!ts) return "";
   const d = ts.toDate ? ts.toDate() : new Date(ts);
   const now = new Date();
   if (d.toDateString() === now.toDateString())
-    return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
   const y = new Date(now); y.setDate(y.getDate() - 1);
-  if (d.toDateString() === y.toDateString()) return 'вчера';
-  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+  if (d.toDateString() === y.toDateString()) return "вчера";
+  return d.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" });
 }
 function fmtDateSep(ts) {
-  if (!ts) return '';
+  if (!ts) return "";
   const d = ts.toDate ? ts.toDate() : new Date(ts);
   const now = new Date();
-  if (d.toDateString() === now.toDateString()) return 'Сегодня';
+  if (d.toDateString() === now.toDateString()) return "Сегодня";
   const y = new Date(now); y.setDate(y.getDate() - 1);
-  if (d.toDateString() === y.toDateString()) return 'Вчера';
-  return d.toLocaleDateString('ru-RU', {
-    day: 'numeric', month: 'long',
-    year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+  if (d.toDateString() === y.toDateString()) return "Вчера";
+  return d.toLocaleDateString("ru-RU", {
+    day: "numeric", month: "long",
+    year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined
   });
 }
 function sameDay(a, b) {
@@ -771,24 +782,24 @@ function sameDay(a, b) {
   return da.toDateString() === db.toDateString();
 }
 function el(html) {
-  const t = document.createElement('template');
+  const t = document.createElement("template");
   t.innerHTML = html.trim();
   return t.content.firstChild;
 }
 function escapeHtml(str) {
-  const d = document.createElement('div');
-  d.textContent = str || '';
+  const d = document.createElement("div");
+  d.textContent = str || "";
   return d.innerHTML;
 }
 function showToast(text, ms = 3000) {
-  const existing = document.querySelector('.upload-toast');
+  const existing = document.querySelector(".upload-toast");
   if (existing) existing.remove();
   const t = el(`<div class="upload-toast">${escapeHtml(text)}</div>`);
   document.body.appendChild(t);
   setTimeout(() => t.remove(), ms);
 }
 function setLoading(on) {
-  let ov = document.getElementById('loadingOverlay');
+  let ov = document.getElementById("loadingOverlay");
   if (on) {
     if (!ov) {
       ov = el('<div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>');
@@ -796,70 +807,79 @@ function setLoading(on) {
     }
   } else if (ov) ov.remove();
 }
-
 function translateAuthError(err) {
-  const code = err && err.code ? err.code : '';
+  const code = err && err.code ? err.code : "";
   const map = {
-    'auth/email-already-in-use': 'Этот email уже зарегистрирован',
-    'auth/invalid-email': 'Некорректный email',
-    'auth/weak-password': 'Пароль слишком слабый (мин. 6 символов)',
-    'auth/user-not-found': 'Пользователь не найден — сначала зарегистрируйтесь',
-    'auth/wrong-password': 'Неверный пароль',
-    'auth/invalid-credential': 'Неверный email или пароль',
-    'auth/invalid-login-credentials': 'Неверный email или пароль. Если аккаунта нет — зарегистрируйтесь',
-    'auth/too-many-requests': 'Слишком много попыток. Подождите минуту',
-    'auth/network-request-failed': 'Сеть / домен. Добавьте сайт в Firebase → Authorized domains',
-    'auth/operation-not-allowed': 'В Firebase не включён Email/Password (Authentication → Sign-in method)',
-    'auth/popup-closed-by-user': 'Окно закрыто',
-    'permission-denied': 'Нет доступа к базе. Проверьте Firestore Rules'
+    "auth/email-already-in-use": "Этот email уже зарегистрирован",
+    "auth/invalid-email": "Некорректный email",
+    "auth/weak-password": "Пароль слишком слабый (мин. 6 символов)",
+    "auth/user-not-found": "Пользователь не найден — сначала зарегистрируйтесь",
+    "auth/wrong-password": "Неверный пароль",
+    "auth/invalid-credential": "Неверный email или пароль. Аккаунта нет? Открой «Регистрация»",
+    "auth/invalid-login-credentials": "Неверный email или пароль. Аккаунта нет? Открой «Регистрация»",
+    "auth/too-many-requests": "Слишком много попыток. Подождите минуту",
+    "auth/network-request-failed": "Сеть / домен. Добавь сайт в Firebase → Authorized domains",
+    "auth/operation-not-allowed": "В Firebase не включён Email/Password",
+    "permission-denied": "Нет доступа к базе. Проверь Firestore Rules"
   };
   return map[code] || (err && err.message) || String(err);
 }
 
-/* ---------- AUTH TABS ---------- */
-document.querySelectorAll('.auth-tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
+/* AUTH TABS */
+document.querySelectorAll(".auth-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".auth-tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
     const target = tab.dataset.tab;
-    document.getElementById('loginForm').classList.toggle('hidden', target !== 'login');
-    document.getElementById('registerForm').classList.toggle('hidden', target !== 'register');
+    document.getElementById("loginForm").classList.toggle("hidden", target !== "login");
+    document.getElementById("registerForm").classList.toggle("hidden", target !== "register");
   });
 });
 
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   if (authBusy) return;
-  const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
-  const errBox = document.getElementById('loginError');
-  errBox.textContent = '';
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  const errBox = document.getElementById("loginError");
+  errBox.textContent = "";
   authBusy = true;
   setLoading(true);
   try {
-    await auth.signInWithEmailAndPassword(email, password);
+    await signInWithEmailAndPassword(auth, email, password);
   } catch (err) {
-    console.error('login', err);
+    console.error("login", err);
     errBox.textContent = translateAuthError(err);
+    const code = err && err.code ? err.code : "";
+    if (code === "auth/invalid-login-credentials" || code === "auth/invalid-credential" || code === "auth/user-not-found") {
+      const hint = document.getElementById("loginHint");
+      if (hint) {
+        hint.innerHTML = '<b style="color:var(--accent);cursor:pointer" id="goRegister">→ Создать аккаунт</b>';
+        document.getElementById("goRegister")?.addEventListener("click", () => {
+          document.querySelector('.auth-tab[data-tab="register"]')?.click();
+          document.getElementById("regEmail").value = email;
+        });
+      }
+    }
   } finally {
     authBusy = false;
     setLoading(false);
   }
 });
 
-document.getElementById('registerForm').addEventListener('submit', async (e) => {
+document.getElementById("registerForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   if (authBusy) return;
-  const name = document.getElementById('regName').value.trim();
-  let username = document.getElementById('regUsername').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
-  const email = document.getElementById('regEmail').value.trim();
-  const password = document.getElementById('regPassword').value;
-  const errBox = document.getElementById('registerError');
-  errBox.textContent = '';
+  const name = document.getElementById("regName").value.trim();
+  let username = document.getElementById("regUsername").value.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+  const email = document.getElementById("regEmail").value.trim();
+  const password = document.getElementById("regPassword").value;
+  const errBox = document.getElementById("registerError");
+  errBox.textContent = "";
 
-  if (!name) { errBox.textContent = 'Введите имя'; return; }
+  if (!name) { errBox.textContent = "Введите имя"; return; }
   if (!username || username.length < 3) {
-    errBox.textContent = 'Юзернейм: латиница, цифры, _ (мин. 3 символа)';
+    errBox.textContent = "Юзернейм: латиница, цифры, _ (мин. 3)";
     return;
   }
 
@@ -867,30 +887,28 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
   setLoading(true);
   let createdUid = null;
   try {
-    // unique username
-    const existing = await db.collection('users').where('username', '==', username).limit(1).get();
+    const q = query(collection(db, "users"), where("username", "==", username), limit(1));
+    const existing = await getDocs(q);
     if (!existing.empty) {
-      errBox.textContent = 'Этот юзернейм уже занят';
+      errBox.textContent = "Этот юзернейм уже занят";
       return;
     }
 
-    const cred = await auth.createUserWithEmailAndPassword(email, password);
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
     createdUid = cred.user.uid;
 
-    await db.collection('users').doc(createdUid).set({
+    await setDoc(doc(db, "users", createdUid), {
       uid: createdUid,
       name,
       username,
       email,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      createdAt: serverTimestamp()
     });
-    // onAuthStateChanged will open the app
   } catch (err) {
-    console.error('register', err);
+    console.error("register", err);
     errBox.textContent = translateAuthError(err);
-    // if auth user created but firestore failed — sign out so state is clean
     if (createdUid) {
-      try { await auth.signOut(); } catch (_) {}
+      try { await signOut(auth); } catch (_) {}
     }
   } finally {
     authBusy = false;
@@ -898,45 +916,44 @@ document.getElementById('registerForm').addEventListener('submit', async (e) => 
   }
 });
 
-/* ---------- AUTH STATE ---------- */
-auth.onAuthStateChanged(async (user) => {
+/* AUTH STATE */
+onAuthStateChanged(auth, async (user) => {
   if (user) {
     setLoading(true);
     try {
       currentUser = user;
-      let doc = await db.collection('users').doc(user.uid).get();
-      currentProfile = doc.data();
+      let snap = await getDoc(doc(db, "users", user.uid));
+      currentProfile = snap.exists() ? snap.data() : null;
 
-      // profile missing (interrupted register) — create minimal from auth
       if (!currentProfile) {
-        const fallbackName = (user.email || 'User').split('@')[0];
-        const fallbackUser = ('u' + user.uid.slice(0, 8)).toLowerCase();
+        const fallbackName = (user.email || "User").split("@")[0];
+        const fallbackUser = ("u" + user.uid.slice(0, 8)).toLowerCase();
         try {
-          await db.collection('users').doc(user.uid).set({
+          await setDoc(doc(db, "users", user.uid), {
             uid: user.uid,
             name: fallbackName,
             username: fallbackUser,
-            email: user.email || '',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            email: user.email || "",
+            createdAt: serverTimestamp()
           });
-          doc = await db.collection('users').doc(user.uid).get();
-          currentProfile = doc.data();
+          snap = await getDoc(doc(db, "users", user.uid));
+          currentProfile = snap.data();
         } catch (e) {
-          console.error('profile create', e);
-          showToast('Нет доступа к Firestore. Проверьте Rules в Firebase');
-          await auth.signOut();
+          console.error("profile create", e);
+          showToast("Нет доступа к Firestore. Проверь Rules");
+          await signOut(auth);
           return;
         }
       }
 
-      document.getElementById('authScreen').classList.add('hidden');
-      document.getElementById('app').classList.remove('hidden');
-      document.getElementById('settingsPanel')?.classList.add('hidden');
+      document.getElementById("authScreen").classList.add("hidden");
+      document.getElementById("app").classList.remove("hidden");
+      document.getElementById("settingsPanel")?.classList.add("hidden");
 
-      const av = document.getElementById('myAvatar');
+      const av = document.getElementById("myAvatar");
       av.textContent = initials(currentProfile.name);
       av.style.background = hashColor(currentProfile.name);
-      av.title = currentProfile.name + ' (@' + currentProfile.username + ')';
+      av.title = currentProfile.name + " (@" + currentProfile.username + ")";
 
       subscribeChats();
     } finally {
@@ -948,61 +965,58 @@ auth.onAuthStateChanged(async (user) => {
     currentChatId = null;
     currentChat = null;
     pendingFiles = [];
-    document.getElementById('authScreen').classList.remove('hidden');
-    document.getElementById('app').classList.add('hidden');
-    document.getElementById('app').classList.remove('chat-open');
+    document.getElementById("authScreen").classList.remove("hidden");
+    document.getElementById("app").classList.add("hidden");
+    document.getElementById("app").classList.remove("chat-open");
     if (unsubChats) unsubChats();
     if (unsubMessages) unsubMessages();
   }
 });
 
-/* ---------- SETTINGS ---------- */
+/* SETTINGS */
 function openSettings() {
-  const panel = document.getElementById('settingsPanel');
   if (!currentProfile) return;
-  document.getElementById('setAvatar').textContent = initials(currentProfile.name);
-  document.getElementById('setAvatar').style.background = hashColor(currentProfile.name);
-  document.getElementById('setName').textContent = currentProfile.name;
-  document.getElementById('setUsername').textContent = '@' + currentProfile.username;
-  document.getElementById('setEmail').textContent = currentProfile.email || '—';
-  panel.classList.remove('hidden');
+  document.getElementById("setAvatar").textContent = initials(currentProfile.name);
+  document.getElementById("setAvatar").style.background = hashColor(currentProfile.name);
+  document.getElementById("setName").textContent = currentProfile.name;
+  document.getElementById("setUsername").textContent = "@" + currentProfile.username;
+  document.getElementById("setEmail").textContent = currentProfile.email || "—";
+  document.getElementById("settingsPanel").classList.remove("hidden");
 }
 function closeSettings() {
-  document.getElementById('settingsPanel').classList.add('hidden');
+  document.getElementById("settingsPanel").classList.add("hidden");
 }
-
-document.getElementById('myAvatar').addEventListener('click', openSettings);
-document.getElementById('closeSettings').addEventListener('click', closeSettings);
-document.getElementById('logoutBtn').addEventListener('click', async () => {
-  if (confirm('Выйти из аккаунта?')) {
+document.getElementById("myAvatar").addEventListener("click", openSettings);
+document.getElementById("closeSettings").addEventListener("click", closeSettings);
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  if (confirm("Выйти из аккаунта?")) {
     closeSettings();
-    await auth.signOut();
+    await signOut(auth);
   }
 });
 
-/* ---------- CHATS ---------- */
+/* CHATS */
 function subscribeChats() {
   if (unsubChats) unsubChats();
-  unsubChats = db.collection('chats')
-    .where('members', 'array-contains', currentUser.uid)
-    .onSnapshot(snap => {
-      allChats = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      allChats.sort((a, b) => {
-        const ta = a.lastMessageTime ? a.lastMessageTime.toMillis() : 0;
-        const tb = b.lastMessageTime ? b.lastMessageTime.toMillis() : 0;
-        return tb - ta;
-      });
-      renderChatList();
-    }, err => {
-      console.error('chats', err);
-      showToast('Ошибка загрузки чатов: ' + translateAuthError(err));
+  const q = query(collection(db, "chats"), where("members", "array-contains", currentUser.uid));
+  unsubChats = onSnapshot(q, snap => {
+    allChats = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allChats.sort((a, b) => {
+      const ta = a.lastMessageTime ? a.lastMessageTime.toMillis() : 0;
+      const tb = b.lastMessageTime ? b.lastMessageTime.toMillis() : 0;
+      return tb - ta;
     });
+    renderChatList();
+  }, err => {
+    console.error("chats", err);
+    showToast("Ошибка чатов: " + translateAuthError(err));
+  });
 }
 
 function renderChatList() {
-  const listEl = document.getElementById('chatList');
-  const filter = document.getElementById('searchInput').value.trim().toLowerCase();
-  listEl.innerHTML = '';
+  const listEl = document.getElementById("chatList");
+  const filter = document.getElementById("searchInput").value.trim().toLowerCase();
+  listEl.innerHTML = "";
   const filtered = allChats.filter(c => chatDisplayName(c).toLowerCase().includes(filter));
   if (filtered.length === 0) {
     listEl.innerHTML = '<div class="search-empty">Нет чатов. Нажмите + чтобы начать</div>';
@@ -1010,8 +1024,8 @@ function renderChatList() {
   }
   filtered.forEach(c => {
     const name = chatDisplayName(c);
-    let icon = c.type === 'group' ? '👥 ' : c.type === 'channel' ? '📢 ' : '';
-    let preview = c.lastMessage || 'Нет сообщений';
+    let icon = c.type === "group" ? "👥 " : c.type === "channel" ? "📢 " : "";
+    let preview = c.lastMessage || "Нет сообщений";
     const item = el(`
       <div class="chat-item" data-id="${c.id}">
         <div class="chat-avatar" style="background:${hashColor(name)}">${initials(name)}</div>
@@ -1025,22 +1039,21 @@ function renderChatList() {
           </div>
         </div>
       </div>`);
-    item.addEventListener('click', () => openChat(c.id));
-    if (c.id === currentChatId) item.classList.add('active');
+    item.addEventListener("click", () => openChat(c.id));
+    if (c.id === currentChatId) item.classList.add("active");
     listEl.appendChild(item);
   });
 }
-document.getElementById('searchInput').addEventListener('input', renderChatList);
+document.getElementById("searchInput").addEventListener("input", renderChatList);
 
 function chatDisplayName(chat) {
-  if (chat.type === 'private') {
+  if (chat.type === "private") {
     const otherUid = chat.members.find(m => m !== currentUser.uid);
-    return (chat.memberNames && chat.memberNames[otherUid]) || 'Пользователь';
+    return (chat.memberNames && chat.memberNames[otherUid]) || "Пользователь";
   }
-  return chat.name || 'Без названия';
+  return chat.name || "Без названия";
 }
 
-/* ---------- OPEN CHAT ---------- */
 function openChat(chatId) {
   currentChatId = chatId;
   currentChat = allChats.find(c => c.id === chatId);
@@ -1049,118 +1062,117 @@ function openChat(chatId) {
   renderPreviewBar();
   closeSettings();
 
-  document.getElementById('emptyState').classList.add('hidden');
-  document.getElementById('chatView').classList.remove('hidden');
-  document.getElementById('app').classList.add('chat-open');
+  document.getElementById("emptyState").classList.add("hidden");
+  document.getElementById("chatView").classList.remove("hidden");
+  document.getElementById("app").classList.add("chat-open");
   renderChatList();
 
   const name = chatDisplayName(currentChat);
-  const hAv = document.getElementById('chatHeaderAvatar');
+  const hAv = document.getElementById("chatHeaderAvatar");
   hAv.textContent = initials(name);
   hAv.style.background = hashColor(name);
-  document.getElementById('chatHeaderName').textContent = name;
+  document.getElementById("chatHeaderName").textContent = name;
 
-  let sub = 'личный чат';
-  if (currentChat.type === 'group') sub = `Группа · ${currentChat.members.length} участн.`;
-  else if (currentChat.type === 'channel') sub = `Канал · ${currentChat.members.length} подписчиков`;
-  document.getElementById('chatHeaderSub').textContent = sub;
+  let sub = "личный чат";
+  if (currentChat.type === "group") sub = `Группа · ${currentChat.members.length} участн.`;
+  else if (currentChat.type === "channel") sub = `Канал · ${currentChat.members.length} подписчиков`;
+  document.getElementById("chatHeaderSub").textContent = sub;
 
-  const isChannel = currentChat.type === 'channel';
+  const isChannel = currentChat.type === "channel";
   const isAdmin = !isChannel || (currentChat.admins || []).includes(currentUser.uid);
-  document.getElementById('composer').classList.toggle('hidden', !isAdmin);
-  document.getElementById('composerLocked').classList.toggle('hidden', isAdmin);
+  document.getElementById("composer").classList.toggle("hidden", !isAdmin);
+  document.getElementById("composerLocked").classList.toggle("hidden", isAdmin);
 
   if (unsubMessages) unsubMessages();
-  const msgsEl = document.getElementById('messages');
-  msgsEl.innerHTML = '';
+  const msgsEl = document.getElementById("messages");
+  msgsEl.innerHTML = "";
 
-  unsubMessages = db.collection('chats').doc(chatId).collection('messages')
-    .orderBy('timestamp', 'asc')
-    .onSnapshot(snap => {
-      msgsEl.innerHTML = '';
-      let lastTs = null;
-      snap.forEach(doc => {
-        const m = doc.data();
-        if (!sameDay(lastTs, m.timestamp)) {
-          msgsEl.appendChild(el(`<div class="date-sep">${fmtDateSep(m.timestamp)}</div>`));
-        }
-        lastTs = m.timestamp;
-        const own = m.senderId === currentUser.uid;
-        const showSender = !own && currentChat.type !== 'private';
-        const hasImage = !!m.imageUrl;
-        const hasText = !!(m.text && m.text.trim());
-        let bubbleInner = '';
-        if (hasImage) bubbleInner += `<img class="msg-img" src="${escapeHtml(m.imageUrl)}" alt="фото" loading="lazy">`;
-        if (hasText) bubbleInner += `<div class="msg-text">${escapeHtml(m.text)}</div>`;
-        if (!hasImage && !hasText) bubbleInner = '<div class="msg-text">(пусто)</div>';
-        const row = el(`
-          <div class="msg-row ${own ? 'own' : 'other'}">
-            ${showSender ? `<div class="msg-sender">${escapeHtml(m.senderName)}</div>` : ''}
-            <div class="msg-bubble ${hasImage ? 'has-image' : ''}">${bubbleInner}</div>
-            <div class="msg-meta"><span class="msg-time">${fmtTime(m.timestamp)}</span></div>
-          </div>`);
-        if (hasImage) {
-          row.querySelector('.msg-img').addEventListener('click', () => openLightbox(m.imageUrl));
-        }
-        msgsEl.appendChild(row);
-      });
-      msgsEl.scrollTop = msgsEl.scrollHeight;
-    }, err => {
-      console.error('messages', err);
-      showToast('Ошибка сообщений: ' + translateAuthError(err));
+  const mq = query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "asc"));
+  unsubMessages = onSnapshot(mq, snap => {
+    msgsEl.innerHTML = "";
+    let lastTs = null;
+    snap.forEach(docSnap => {
+      const m = docSnap.data();
+      if (!sameDay(lastTs, m.timestamp)) {
+        msgsEl.appendChild(el(`<div class="date-sep">${fmtDateSep(m.timestamp)}</div>`));
+      }
+      lastTs = m.timestamp;
+      const own = m.senderId === currentUser.uid;
+      const showSender = !own && currentChat.type !== "private";
+      const hasImage = !!m.imageUrl;
+      const hasText = !!(m.text && m.text.trim());
+      let bubbleInner = "";
+      if (hasImage) bubbleInner += `<img class="msg-img" src="${escapeHtml(m.imageUrl)}" alt="фото" loading="lazy">`;
+      if (hasText) bubbleInner += `<div class="msg-text">${escapeHtml(m.text)}</div>`;
+      if (!hasImage && !hasText) bubbleInner = '<div class="msg-text">(пусто)</div>';
+      const row = el(`
+        <div class="msg-row ${own ? "own" : "other"}">
+          ${showSender ? `<div class="msg-sender">${escapeHtml(m.senderName)}</div>` : ""}
+          <div class="msg-bubble ${hasImage ? "has-image" : ""}">${bubbleInner}</div>
+          <div class="msg-meta"><span class="msg-time">${fmtTime(m.timestamp)}</span></div>
+        </div>`);
+      if (hasImage) {
+        row.querySelector(".msg-img").addEventListener("click", () => openLightbox(m.imageUrl));
+      }
+      msgsEl.appendChild(row);
     });
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+  }, err => {
+    console.error("messages", err);
+    showToast("Ошибка сообщений: " + translateAuthError(err));
+  });
 }
 
-document.getElementById('backBtn').addEventListener('click', () => {
+document.getElementById("backBtn").addEventListener("click", () => {
   currentChatId = null;
   currentChat = null;
   pendingFiles = [];
   renderPreviewBar();
-  document.getElementById('chatView').classList.add('hidden');
-  document.getElementById('emptyState').classList.remove('hidden');
-  document.getElementById('app').classList.remove('chat-open');
+  document.getElementById("chatView").classList.add("hidden");
+  document.getElementById("emptyState").classList.remove("hidden");
+  document.getElementById("app").classList.remove("chat-open");
   if (unsubMessages) { unsubMessages(); unsubMessages = null; }
   renderChatList();
 });
 
 function openLightbox(url) {
-  document.getElementById('lightboxImg').src = url;
-  document.getElementById('lightbox').classList.remove('hidden');
+  document.getElementById("lightboxImg").src = url;
+  document.getElementById("lightbox").classList.remove("hidden");
 }
-document.getElementById('lightboxClose').addEventListener('click', () => {
-  document.getElementById('lightbox').classList.add('hidden');
-  document.getElementById('lightboxImg').src = '';
+document.getElementById("lightboxClose").addEventListener("click", () => {
+  document.getElementById("lightbox").classList.add("hidden");
+  document.getElementById("lightboxImg").src = "";
 });
-document.getElementById('lightbox').addEventListener('click', (e) => {
-  if (e.target.id === 'lightbox') {
-    document.getElementById('lightbox').classList.add('hidden');
-    document.getElementById('lightboxImg').src = '';
+document.getElementById("lightbox").addEventListener("click", (e) => {
+  if (e.target.id === "lightbox") {
+    document.getElementById("lightbox").classList.add("hidden");
+    document.getElementById("lightboxImg").src = "";
   }
 });
 
-/* ---------- IMAGES ---------- */
-document.getElementById('attachBtn').addEventListener('click', () => document.getElementById('fileInput').click());
-document.getElementById('fileInput').addEventListener('change', (e) => {
+/* IMAGES */
+document.getElementById("attachBtn").addEventListener("click", () => document.getElementById("fileInput").click());
+document.getElementById("fileInput").addEventListener("change", (e) => {
   const files = Array.from(e.target.files || []);
-  e.target.value = '';
+  e.target.value = "";
   for (const f of files) {
-    if (!f.type.startsWith('image/')) { showToast('Только изображения'); continue; }
-    if (f.size > MAX_IMAGE_SIZE) { showToast('Макс. 8 МБ'); continue; }
-    if (pendingFiles.length >= MAX_IMAGES) { showToast('Макс. 5 фото'); break; }
+    if (!f.type.startsWith("image/")) { showToast("Только изображения"); continue; }
+    if (f.size > MAX_IMAGE_SIZE) { showToast("Макс. 8 МБ"); continue; }
+    if (pendingFiles.length >= MAX_IMAGES) { showToast("Макс. 5 фото"); break; }
     pendingFiles.push(f);
   }
   renderPreviewBar();
 });
 
 function renderPreviewBar() {
-  const bar = document.getElementById('previewBar');
-  bar.innerHTML = '';
-  if (!pendingFiles.length) { bar.classList.add('hidden'); return; }
-  bar.classList.remove('hidden');
+  const bar = document.getElementById("previewBar");
+  bar.innerHTML = "";
+  if (!pendingFiles.length) { bar.classList.add("hidden"); return; }
+  bar.classList.remove("hidden");
   pendingFiles.forEach((file, idx) => {
     const url = URL.createObjectURL(file);
     const item = el(`<div class="preview-item"><img src="${url}" alt=""><button type="button" class="preview-rm" data-idx="${idx}">✕</button></div>`);
-    item.querySelector('.preview-rm').addEventListener('click', () => {
+    item.querySelector(".preview-rm").addEventListener("click", () => {
       pendingFiles.splice(idx, 1);
       renderPreviewBar();
     });
@@ -1169,120 +1181,120 @@ function renderPreviewBar() {
 }
 
 async function uploadImage(file, chatId) {
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
   const path = `chats/${chatId}/${currentUser.uid}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const ref = storage.ref(path);
-  const snap = await ref.put(file, { contentType: file.type });
-  return await snap.ref.getDownloadURL();
+  const storageRef = ref(storage, path);
+  await uploadBytes(storageRef, file, { contentType: file.type });
+  return await getDownloadURL(storageRef);
 }
 
 async function sendMessage() {
-  const input = document.getElementById('msgInput');
+  const input = document.getElementById("msgInput");
   const text = input.value.trim();
   const files = [...pendingFiles];
   if ((!text && !files.length) || !currentChatId) return;
-  input.value = '';
+  input.value = "";
   pendingFiles = [];
   renderPreviewBar();
   input.focus();
-  const sendBtn = document.getElementById('sendBtn');
+  const sendBtn = document.getElementById("sendBtn");
   sendBtn.disabled = true;
   try {
-    const chatRef = db.collection('chats').doc(currentChatId);
-    if (files.length) showToast(files.length === 1 ? 'Загрузка фото…' : `Загрузка ${files.length} фото…`);
+    const chatRef = doc(db, "chats", currentChatId);
+    if (files.length) showToast(files.length === 1 ? "Загрузка фото…" : `Загрузка ${files.length} фото…`);
     for (let i = 0; i < files.length; i++) {
       const imageUrl = await uploadImage(files[i], currentChatId);
-      const msgText = (i === files.length - 1 && text) ? text : '';
-      await chatRef.collection('messages').add({
+      const msgText = (i === files.length - 1 && text) ? text : "";
+      await addDoc(collection(db, "chats", currentChatId, "messages"), {
         senderId: currentUser.uid,
         senderName: currentProfile.name,
         text: msgText,
         imageUrl,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        timestamp: serverTimestamp()
       });
     }
     if (!files.length && text) {
-      await chatRef.collection('messages').add({
+      await addDoc(collection(db, "chats", currentChatId, "messages"), {
         senderId: currentUser.uid,
         senderName: currentProfile.name,
         text,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        timestamp: serverTimestamp()
       });
     }
     let lastPreview = text;
-    if (files.length) lastPreview = text ? `📷 ${text}` : '📷 Фото';
-    if (lastPreview && lastPreview.length > 80) lastPreview = lastPreview.slice(0, 80) + '…';
-    await chatRef.update({
-      lastMessage: lastPreview || '📷 Фото',
-      lastMessageTime: firebase.firestore.FieldValue.serverTimestamp()
+    if (files.length) lastPreview = text ? `📷 ${text}` : "📷 Фото";
+    if (lastPreview && lastPreview.length > 80) lastPreview = lastPreview.slice(0, 80) + "…";
+    await updateDoc(chatRef, {
+      lastMessage: lastPreview || "📷 Фото",
+      lastMessageTime: serverTimestamp()
     });
   } catch (err) {
-    console.error('send', err);
-    showToast('Ошибка: ' + translateAuthError(err), 4000);
+    console.error("send", err);
+    showToast("Ошибка: " + translateAuthError(err), 4000);
   } finally {
     sendBtn.disabled = false;
   }
 }
-document.getElementById('sendBtn').addEventListener('click', sendMessage);
-document.getElementById('msgInput').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+document.getElementById("sendBtn").addEventListener("click", sendMessage);
+document.getElementById("msgInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
 
-/* ---------- NEW CHAT MODAL ---------- */
-const modal = document.getElementById('newChatModal');
-document.querySelector('.rail-btn[data-view="new"]').addEventListener('click', () => {
-  modal.classList.remove('hidden');
-  document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
-  document.querySelector('.modal-tab[data-mtab="private"]').classList.add('active');
-  document.querySelectorAll('.modal-pane').forEach(p => p.classList.add('hidden'));
-  document.getElementById('pane-private').classList.remove('hidden');
-  document.getElementById('userSearchResults').innerHTML = '';
-  document.getElementById('userSearch').value = '';
+/* MODAL */
+const modal = document.getElementById("newChatModal");
+document.querySelector('.rail-btn[data-view="new"]').addEventListener("click", () => {
+  modal.classList.remove("hidden");
+  document.querySelectorAll(".modal-tab").forEach(t => t.classList.remove("active"));
+  document.querySelector('.modal-tab[data-mtab="private"]').classList.add("active");
+  document.querySelectorAll(".modal-pane").forEach(p => p.classList.add("hidden"));
+  document.getElementById("pane-private").classList.remove("hidden");
+  document.getElementById("userSearchResults").innerHTML = "";
+  document.getElementById("userSearch").value = "";
 });
-document.getElementById('closeModal').addEventListener('click', () => modal.classList.add('hidden'));
-modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
+document.getElementById("closeModal").addEventListener("click", () => modal.classList.add("hidden"));
+modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.add("hidden"); });
 
-document.querySelectorAll('.modal-tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    document.querySelectorAll('.modal-pane').forEach(p => p.classList.add('hidden'));
-    document.getElementById('pane-' + tab.dataset.mtab).classList.remove('hidden');
+document.querySelectorAll(".modal-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".modal-tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+    document.querySelectorAll(".modal-pane").forEach(p => p.classList.add("hidden"));
+    document.getElementById("pane-" + tab.dataset.mtab).classList.remove("hidden");
   });
 });
 
 let userSearchTimeout;
-document.getElementById('userSearch').addEventListener('input', (e) => {
+document.getElementById("userSearch").addEventListener("input", (e) => {
   clearTimeout(userSearchTimeout);
-  const val = e.target.value.trim().toLowerCase().replace(/^@/, '');
-  userSearchTimeout = setTimeout(() => searchUsers(val, 'userSearchResults', async (user) => {
-    modal.classList.add('hidden');
-    document.getElementById('userSearch').value = '';
-    document.getElementById('userSearchResults').innerHTML = '';
+  const val = e.target.value.trim().toLowerCase().replace(/^@/, "");
+  userSearchTimeout = setTimeout(() => searchUsers(val, "userSearchResults", async (user) => {
+    modal.classList.add("hidden");
+    document.getElementById("userSearch").value = "";
+    document.getElementById("userSearchResults").innerHTML = "";
     await startPrivateChat(user);
   }), 250);
 });
 
 async function searchUsers(term, resultsElId, onPick) {
   const resultsEl = document.getElementById(resultsElId);
-  resultsEl.innerHTML = '';
+  resultsEl.innerHTML = "";
   if (!term || term.length < 1) {
     resultsEl.innerHTML = '<div class="search-empty">Введите юзернейм (латиница)</div>';
     return;
   }
   resultsEl.innerHTML = '<div class="search-empty">Поиск…</div>';
   try {
-    // prefix search on username
-    const snap = await db.collection('users')
-      .where('username', '>=', term)
-      .where('username', '<=', term + '\uf8ff')
-      .limit(15)
-      .get();
-
-    resultsEl.innerHTML = '';
+    const q = query(
+      collection(db, "users"),
+      where("username", ">=", term),
+      where("username", "<=", term + "\uf8ff"),
+      limit(15)
+    );
+    const snap = await getDocs(q);
+    resultsEl.innerHTML = "";
     let count = 0;
-    snap.forEach(doc => {
-      const u = doc.data();
+    snap.forEach(docSnap => {
+      const u = docSnap.data();
       if (u.uid === currentUser.uid) return;
       count++;
       const item = el(`
@@ -1293,17 +1305,17 @@ async function searchUsers(term, resultsElId, onPick) {
             <div class="sr-username">@${escapeHtml(u.username)}</div>
           </div>
         </div>`);
-      item.addEventListener('click', () => onPick(u));
+      item.addEventListener("click", () => onPick(u));
       resultsEl.appendChild(item);
     });
     if (count === 0) {
       resultsEl.innerHTML = '<div class="search-empty">Никого не найдено.<br>Пользователь должен сначала зарегистрироваться.</div>';
     }
   } catch (err) {
-    console.error('search', err);
+    console.error("search", err);
     let msg = translateAuthError(err);
-    if (String(err.message || '').includes('index')) {
-      msg = 'Нужен индекс Firestore. Открой ссылку из ошибки в консоли браузера (F12)';
+    if (String(err.message || "").includes("index")) {
+      msg = "Нужен индекс Firestore. Открой ссылку из ошибки в консоли (F12)";
     }
     resultsEl.innerHTML = `<div class="search-empty" style="color:var(--danger)">${escapeHtml(msg)}</div>`;
   }
@@ -1311,87 +1323,87 @@ async function searchUsers(term, resultsElId, onPick) {
 
 async function startPrivateChat(otherUser) {
   const uid1 = currentUser.uid, uid2 = otherUser.uid;
-  const chatId = [uid1, uid2].sort().join('_');
-  const chatRef = db.collection('chats').doc(chatId);
+  const chatId = [uid1, uid2].sort().join("_");
+  const chatRef = doc(db, "chats", chatId);
   try {
-    const doc = await chatRef.get();
-    if (!doc.exists) {
-      await chatRef.set({
-        type: 'private',
+    const existing = await getDoc(chatRef);
+    if (!existing.exists()) {
+      await setDoc(chatRef, {
+        type: "private",
         members: [uid1, uid2],
         memberNames: { [uid1]: currentProfile.name, [uid2]: otherUser.name },
-        lastMessage: '',
-        lastMessageTime: firebase.firestore.FieldValue.serverTimestamp()
+        lastMessage: "",
+        lastMessageTime: serverTimestamp()
       });
     }
     openChat(chatId);
   } catch (err) {
     console.error(err);
-    showToast('Не удалось открыть чат: ' + translateAuthError(err));
+    showToast("Не удалось открыть чат: " + translateAuthError(err));
   }
 }
 
 let groupSelectedUsers = {};
-document.getElementById('groupUserSearch').addEventListener('input', (e) => {
+document.getElementById("groupUserSearch").addEventListener("input", (e) => {
   clearTimeout(userSearchTimeout);
-  const val = e.target.value.trim().toLowerCase().replace(/^@/, '');
-  userSearchTimeout = setTimeout(() => searchUsers(val, 'groupSearchResults', (user) => {
+  const val = e.target.value.trim().toLowerCase().replace(/^@/, "");
+  userSearchTimeout = setTimeout(() => searchUsers(val, "groupSearchResults", (user) => {
     groupSelectedUsers[user.uid] = user;
     renderGroupChips();
-    document.getElementById('groupUserSearch').value = '';
-    document.getElementById('groupSearchResults').innerHTML = '';
+    document.getElementById("groupUserSearch").value = "";
+    document.getElementById("groupSearchResults").innerHTML = "";
   }), 250);
 });
 function renderGroupChips() {
-  const chipsEl = document.getElementById('groupSelected');
-  chipsEl.innerHTML = '';
+  const chipsEl = document.getElementById("groupSelected");
+  chipsEl.innerHTML = "";
   Object.values(groupSelectedUsers).forEach(u => {
     const chip = el(`<div class="chip">${escapeHtml(u.name)} <button type="button">✕</button></div>`);
-    chip.querySelector('button').addEventListener('click', () => {
+    chip.querySelector("button").addEventListener("click", () => {
       delete groupSelectedUsers[u.uid];
       renderGroupChips();
     });
     chipsEl.appendChild(chip);
   });
 }
-document.getElementById('createGroupBtn').addEventListener('click', async () => {
-  const name = document.getElementById('groupName').value.trim();
-  if (!name) { showToast('Введите название группы'); return; }
+document.getElementById("createGroupBtn").addEventListener("click", async () => {
+  const name = document.getElementById("groupName").value.trim();
+  if (!name) { showToast("Введите название группы"); return; }
   const memberIds = [currentUser.uid, ...Object.keys(groupSelectedUsers)];
-  if (memberIds.length < 2) { showToast('Добавьте участника'); return; }
+  if (memberIds.length < 2) { showToast("Добавьте участника"); return; }
   setLoading(true);
   try {
-    const ref = await db.collection('chats').add({
-      type: 'group', name, members: memberIds, admins: [currentUser.uid],
+    const refDoc = await addDoc(collection(db, "chats"), {
+      type: "group", name, members: memberIds, admins: [currentUser.uid],
       lastMessage: `${currentProfile.name} создал(а) группу`,
-      lastMessageTime: firebase.firestore.FieldValue.serverTimestamp()
+      lastMessageTime: serverTimestamp()
     });
-    document.getElementById('groupName').value = '';
+    document.getElementById("groupName").value = "";
     groupSelectedUsers = {};
     renderGroupChips();
-    modal.classList.add('hidden');
-    openChat(ref.id);
+    modal.classList.add("hidden");
+    openChat(refDoc.id);
   } catch (err) {
     showToast(translateAuthError(err));
   } finally { setLoading(false); }
 });
 
-document.getElementById('createChannelBtn').addEventListener('click', async () => {
-  const name = document.getElementById('channelName').value.trim();
-  const desc = document.getElementById('channelDesc').value.trim();
-  if (!name) { showToast('Введите название канала'); return; }
+document.getElementById("createChannelBtn").addEventListener("click", async () => {
+  const name = document.getElementById("channelName").value.trim();
+  const desc = document.getElementById("channelDesc").value.trim();
+  if (!name) { showToast("Введите название канала"); return; }
   setLoading(true);
   try {
-    const ref = await db.collection('chats').add({
-      type: 'channel', name, description: desc,
+    const refDoc = await addDoc(collection(db, "chats"), {
+      type: "channel", name, description: desc,
       members: [currentUser.uid], admins: [currentUser.uid],
       lastMessage: `Канал «${name}» создан`,
-      lastMessageTime: firebase.firestore.FieldValue.serverTimestamp()
+      lastMessageTime: serverTimestamp()
     });
-    document.getElementById('channelName').value = '';
-    document.getElementById('channelDesc').value = '';
-    modal.classList.add('hidden');
-    openChat(ref.id);
+    document.getElementById("channelName").value = "";
+    document.getElementById("channelDesc").value = "";
+    modal.classList.add("hidden");
+    openChat(refDoc.id);
   } catch (err) {
     showToast(translateAuthError(err));
   } finally { setLoading(false); }
