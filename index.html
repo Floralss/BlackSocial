@@ -817,9 +817,12 @@ function translateAuthError(err) {
     'auth/user-not-found': 'Пользователь не найден',
     'auth/wrong-password': 'Неверный пароль',
     'auth/invalid-credential': 'Неверный email или пароль',
-    'auth/too-many-requests': 'Слишком много попыток. Подождите'
+    'auth/invalid-login-credentials': 'Неверный email или пароль',
+    'auth/too-many-requests': 'Слишком много попыток. Подождите',
+    'auth/network-request-failed': 'Нет сети или домен не разрешён в Firebase',
+    'auth/operation-not-allowed': 'В Firebase не включён вход по Email/Password'
   };
-  return map[err.code] || err.message;
+  return map[err.code] || err.message || String(err);
 }
 
 /* ---------- AUTH STATE ---------- */
