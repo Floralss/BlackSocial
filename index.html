@@ -463,11 +463,62 @@ html, body {
   .app.chat-open .chat-panel { left: 0; }
 }
 
-  </style>
+  
+/* ===== SETTINGS PANEL ===== */
+.settings-panel {
+  position: absolute; inset: 0; background: var(--panel);
+  z-index: 50; display: flex; flex-direction: column;
+  animation: slideUp 0.2s ease;
+}
+.settings-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
+}
+.settings-header h2 { font-size: 17px; font-weight: 600; flex: 1; }
+.settings-body { padding: 20px 16px; overflow-y: auto; flex: 1; }
+.settings-avatar-big {
+  width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 16px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 28px;
+}
+.settings-row {
+  background: var(--bg); border-radius: 12px; padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.settings-row label { display: block; font-size: 12px; color: var(--text-2); margin-bottom: 4px; }
+.settings-row .val { font-size: 15px; font-weight: 500; }
+.settings-actions { margin-top: 24px; display: flex; flex-direction: column; gap: 10px; }
+.btn-danger {
+  background: transparent; border: 1px solid var(--danger); color: var(--danger);
+  padding: 12px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer;
+}
+.btn-danger:hover { background: rgba(234,67,53,0.1); }
+.btn-ghost {
+  background: var(--panel-2); border: none; color: var(--text);
+  padding: 12px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer;
+}
+.btn-ghost:hover { background: var(--border); }
+
+.loading-overlay {
+  position: absolute; inset: 0; background: rgba(11,20,26,0.7);
+  display: flex; align-items: center; justify-content: center; z-index: 80;
+  backdrop-filter: blur(2px);
+}
+.spinner {
+  width: 36px; height: 36px; border: 3px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.search-empty {
+  padding: 24px 16px; text-align: center; color: var(--text-2); font-size: 13px;
+}
+</style>
 </head>
 <body>
 
-<!-- ===== AUTH ===== -->
+<!-- AUTH -->
 <div id="authScreen" class="auth-screen">
   <div class="auth-box">
     <div class="auth-logo">
@@ -475,12 +526,10 @@ html, body {
       <div class="logo-text">BlackSocial</div>
       <div class="logo-sub">мессенджер нового поколения</div>
     </div>
-
     <div class="auth-tabs">
       <button class="auth-tab active" data-tab="login">Вход</button>
       <button class="auth-tab" data-tab="register">Регистрация</button>
     </div>
-
     <form id="loginForm" class="auth-form">
       <div class="field">
         <input type="email" id="loginEmail" placeholder=" " required autocomplete="email">
@@ -493,7 +542,6 @@ html, body {
       <button type="submit" class="btn-primary">Войти</button>
       <div class="auth-error" id="loginError"></div>
     </form>
-
     <form id="registerForm" class="auth-form hidden">
       <div class="field">
         <input type="text" id="regName" placeholder=" " required autocomplete="name">
@@ -517,9 +565,7 @@ html, body {
   </div>
 </div>
 
-<!-- ===== MAIN APP ===== -->
 <div id="app" class="app hidden">
-
   <aside class="rail">
     <button class="rail-btn active" data-view="chats" title="Чаты">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -528,17 +574,36 @@ html, body {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
     </button>
     <div class="rail-spacer"></div>
-    <button class="rail-avatar" id="myAvatar" title="Выйти"></button>
+    <button class="rail-avatar" id="myAvatar" title="Настройки"></button>
   </aside>
 
   <section class="list-panel" id="listPanel">
     <header class="list-header">
       <div class="search-wrap">
         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="searchInput" placeholder="Поиск" autocomplete="off">
+        <input type="text" id="searchInput" placeholder="Поиск чатов" autocomplete="off">
       </div>
     </header>
     <div id="chatList" class="chat-list"></div>
+
+    <!-- SETTINGS (inside list panel area) -->
+    <div id="settingsPanel" class="settings-panel hidden">
+      <div class="settings-header">
+        <button class="back-btn" id="closeSettings" style="display:flex">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <h2>Настройки</h2>
+      </div>
+      <div class="settings-body">
+        <div class="settings-avatar-big" id="setAvatar"></div>
+        <div class="settings-row"><label>Имя</label><div class="val" id="setName"></div></div>
+        <div class="settings-row"><label>Юзернейм</label><div class="val" id="setUsername"></div></div>
+        <div class="settings-row"><label>Email</label><div class="val" id="setEmail"></div></div>
+        <div class="settings-actions">
+          <button class="btn-danger" id="logoutBtn">Выйти из аккаунта</button>
+        </div>
+      </div>
+    </div>
   </section>
 
   <main class="chat-panel" id="chatPanel">
@@ -547,7 +612,6 @@ html, body {
       <h2>BlackSocial</h2>
       <p>Выберите чат или создайте новый</p>
     </div>
-
     <div class="chat-view hidden" id="chatView">
       <header class="chat-header">
         <button class="back-btn" id="backBtn" title="Назад">
@@ -559,9 +623,7 @@ html, body {
           <div class="chat-header-sub" id="chatHeaderSub"></div>
         </div>
       </header>
-
       <div class="messages" id="messages"></div>
-
       <div class="composer" id="composer">
         <button class="btn-attach" id="attachBtn" title="Фото">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -586,20 +648,17 @@ html, body {
   </main>
 </div>
 
-<!-- ===== NEW CHAT MODAL ===== -->
 <div id="newChatModal" class="modal hidden">
   <div class="modal-box">
     <header class="modal-header">
       <span>Новый чат</span>
-      <button class="modal-close" id="closeModal" title="Закрыть">✕</button>
+      <button class="modal-close" id="closeModal">✕</button>
     </header>
-
     <div class="modal-tabs">
       <button class="modal-tab active" data-mtab="private">Личный</button>
       <button class="modal-tab" data-mtab="group">Группа</button>
       <button class="modal-tab" data-mtab="channel">Канал</button>
     </div>
-
     <div class="modal-pane" id="pane-private">
       <div class="field">
         <input type="text" id="userSearch" placeholder=" " autocomplete="off">
@@ -607,7 +666,6 @@ html, body {
       </div>
       <div id="userSearchResults" class="search-results"></div>
     </div>
-
     <div class="modal-pane hidden" id="pane-group">
       <div class="field">
         <input type="text" id="groupName" placeholder=" " autocomplete="off">
@@ -621,7 +679,6 @@ html, body {
       <div id="groupSelected" class="selected-chips"></div>
       <button class="btn-primary" id="createGroupBtn">Создать группу</button>
     </div>
-
     <div class="modal-pane hidden" id="pane-channel">
       <div class="field">
         <input type="text" id="channelName" placeholder=" " autocomplete="off">
@@ -636,7 +693,6 @@ html, body {
   </div>
 </div>
 
-<!-- lightbox -->
 <div id="lightbox" class="lightbox hidden">
   <button class="lightbox-close" id="lightboxClose">✕</button>
   <img id="lightboxImg" src="" alt="">
@@ -647,7 +703,6 @@ html, body {
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script>
-// Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyBGFONUBgybQr0KCn_Ao_ZT9HkWVSU4jEw",
   authDomain: "black-social-af844.firebaseapp.com",
@@ -657,13 +712,13 @@ const firebaseConfig = {
   appId: "1:296441938682:web:096a3e642bd00116f7bf43",
   measurementId: "G-2PX2QMR8HS"
 };
-
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 const storage = firebase.storage();
 
-/* ============ BlackSocial — app.js ============ */
+
+/* ============ BlackSocial ============ */
 
 let currentUser = null;
 let currentProfile = null;
@@ -672,82 +727,96 @@ let currentChat = null;
 let unsubMessages = null;
 let unsubChats = null;
 let allChats = [];
-let pendingFiles = []; // File objects to upload
+let pendingFiles = [];
+let authBusy = false;
 
-const MAX_IMAGE_SIZE = 8 * 1024 * 1024; // 8 MB
+const MAX_IMAGE_SIZE = 8 * 1024 * 1024;
 const MAX_IMAGES = 5;
 
-/* ---------- helpers ---------- */
 function hashColor(str) {
   let hash = 0;
-  for (let i = 0; i < (str || '').length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const hue = Math.abs(hash) % 360;
-  return `hsl(${hue}, 55%, 42%)`;
+  for (let i = 0; i < (str || '').length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  return `hsl(${Math.abs(hash) % 360}, 55%, 42%)`;
 }
-
 function initials(name) {
   if (!name) return '?';
   return name.trim().split(/\s+/).slice(0, 2).map(w => w[0].toUpperCase()).join('');
 }
-
 function fmtTime(ts) {
   if (!ts) return '';
   const d = ts.toDate ? ts.toDate() : new Date(ts);
   const now = new Date();
-  if (d.toDateString() === now.toDateString()) {
+  if (d.toDateString() === now.toDateString())
     return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-  }
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return 'вчера';
+  const y = new Date(now); y.setDate(y.getDate() - 1);
+  if (d.toDateString() === y.toDateString()) return 'вчера';
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
 }
-
 function fmtDateSep(ts) {
   if (!ts) return '';
   const d = ts.toDate ? ts.toDate() : new Date(ts);
   const now = new Date();
   if (d.toDateString() === now.toDateString()) return 'Сегодня';
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return 'Вчера';
+  const y = new Date(now); y.setDate(y.getDate() - 1);
+  if (d.toDateString() === y.toDateString()) return 'Вчера';
   return d.toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'long',
+    day: 'numeric', month: 'long',
     year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
   });
 }
-
 function sameDay(a, b) {
   if (!a || !b) return false;
   const da = a.toDate ? a.toDate() : new Date(a);
   const db = b.toDate ? b.toDate() : new Date(b);
   return da.toDateString() === db.toDateString();
 }
-
 function el(html) {
   const t = document.createElement('template');
   t.innerHTML = html.trim();
   return t.content.firstChild;
 }
-
 function escapeHtml(str) {
   const d = document.createElement('div');
   d.textContent = str || '';
   return d.innerHTML;
 }
-
-function showToast(text, ms = 2500) {
+function showToast(text, ms = 3000) {
   const existing = document.querySelector('.upload-toast');
   if (existing) existing.remove();
   const t = el(`<div class="upload-toast">${escapeHtml(text)}</div>`);
   document.body.appendChild(t);
   setTimeout(() => t.remove(), ms);
 }
+function setLoading(on) {
+  let ov = document.getElementById('loadingOverlay');
+  if (on) {
+    if (!ov) {
+      ov = el('<div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>');
+      document.body.appendChild(ov);
+    }
+  } else if (ov) ov.remove();
+}
 
-/* ---------- AUTH UI ---------- */
+function translateAuthError(err) {
+  const code = err && err.code ? err.code : '';
+  const map = {
+    'auth/email-already-in-use': 'Этот email уже зарегистрирован',
+    'auth/invalid-email': 'Некорректный email',
+    'auth/weak-password': 'Пароль слишком слабый (мин. 6 символов)',
+    'auth/user-not-found': 'Пользователь не найден — сначала зарегистрируйтесь',
+    'auth/wrong-password': 'Неверный пароль',
+    'auth/invalid-credential': 'Неверный email или пароль',
+    'auth/invalid-login-credentials': 'Неверный email или пароль. Если аккаунта нет — зарегистрируйтесь',
+    'auth/too-many-requests': 'Слишком много попыток. Подождите минуту',
+    'auth/network-request-failed': 'Сеть / домен. Добавьте сайт в Firebase → Authorized domains',
+    'auth/operation-not-allowed': 'В Firebase не включён Email/Password (Authentication → Sign-in method)',
+    'auth/popup-closed-by-user': 'Окно закрыто',
+    'permission-denied': 'Нет доступа к базе. Проверьте Firestore Rules'
+  };
+  return map[code] || (err && err.message) || String(err);
+}
+
+/* ---------- AUTH TABS ---------- */
 document.querySelectorAll('.auth-tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
@@ -760,91 +829,119 @@ document.querySelectorAll('.auth-tab').forEach(tab => {
 
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (authBusy) return;
   const email = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
   const errBox = document.getElementById('loginError');
   errBox.textContent = '';
+  authBusy = true;
+  setLoading(true);
   try {
     await auth.signInWithEmailAndPassword(email, password);
   } catch (err) {
+    console.error('login', err);
     errBox.textContent = translateAuthError(err);
+  } finally {
+    authBusy = false;
+    setLoading(false);
   }
 });
 
 document.getElementById('registerForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (authBusy) return;
   const name = document.getElementById('regName').value.trim();
-  const username = document.getElementById('regUsername').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+  let username = document.getElementById('regUsername').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
   const email = document.getElementById('regEmail').value.trim();
   const password = document.getElementById('regPassword').value;
   const errBox = document.getElementById('registerError');
   errBox.textContent = '';
 
-  if (!username) {
-    errBox.textContent = 'Юзернейм: только латиница, цифры и _';
-    return;
-  }
-  if (username.length < 3) {
-    errBox.textContent = 'Юзернейм слишком короткий (мин. 3)';
+  if (!name) { errBox.textContent = 'Введите имя'; return; }
+  if (!username || username.length < 3) {
+    errBox.textContent = 'Юзернейм: латиница, цифры, _ (мин. 3 символа)';
     return;
   }
 
+  authBusy = true;
+  setLoading(true);
+  let createdUid = null;
   try {
-    const existing = await db.collection('users').where('username', '==', username).get();
+    // unique username
+    const existing = await db.collection('users').where('username', '==', username).limit(1).get();
     if (!existing.empty) {
       errBox.textContent = 'Этот юзернейм уже занят';
       return;
     }
 
     const cred = await auth.createUserWithEmailAndPassword(email, password);
-    await db.collection('users').doc(cred.user.uid).set({
-      uid: cred.user.uid,
+    createdUid = cred.user.uid;
+
+    await db.collection('users').doc(createdUid).set({
+      uid: createdUid,
       name,
       username,
       email,
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
+    // onAuthStateChanged will open the app
   } catch (err) {
+    console.error('register', err);
     errBox.textContent = translateAuthError(err);
+    // if auth user created but firestore failed — sign out so state is clean
+    if (createdUid) {
+      try { await auth.signOut(); } catch (_) {}
+    }
+  } finally {
+    authBusy = false;
+    setLoading(false);
   }
 });
-
-function translateAuthError(err) {
-  const map = {
-    'auth/email-already-in-use': 'Этот email уже зарегистрирован',
-    'auth/invalid-email': 'Некорректный email',
-    'auth/weak-password': 'Пароль слишком слабый (мин. 6 символов)',
-    'auth/user-not-found': 'Пользователь не найден',
-    'auth/wrong-password': 'Неверный пароль',
-    'auth/invalid-credential': 'Неверный email или пароль',
-    'auth/invalid-login-credentials': 'Неверный email или пароль',
-    'auth/too-many-requests': 'Слишком много попыток. Подождите',
-    'auth/network-request-failed': 'Нет сети или домен не разрешён в Firebase',
-    'auth/operation-not-allowed': 'В Firebase не включён вход по Email/Password'
-  };
-  return map[err.code] || err.message || String(err);
-}
 
 /* ---------- AUTH STATE ---------- */
 auth.onAuthStateChanged(async (user) => {
   if (user) {
-    currentUser = user;
-    const doc = await db.collection('users').doc(user.uid).get();
-    currentProfile = doc.data();
-    if (!currentProfile) {
-      await auth.signOut();
-      return;
+    setLoading(true);
+    try {
+      currentUser = user;
+      let doc = await db.collection('users').doc(user.uid).get();
+      currentProfile = doc.data();
+
+      // profile missing (interrupted register) — create minimal from auth
+      if (!currentProfile) {
+        const fallbackName = (user.email || 'User').split('@')[0];
+        const fallbackUser = ('u' + user.uid.slice(0, 8)).toLowerCase();
+        try {
+          await db.collection('users').doc(user.uid).set({
+            uid: user.uid,
+            name: fallbackName,
+            username: fallbackUser,
+            email: user.email || '',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          doc = await db.collection('users').doc(user.uid).get();
+          currentProfile = doc.data();
+        } catch (e) {
+          console.error('profile create', e);
+          showToast('Нет доступа к Firestore. Проверьте Rules в Firebase');
+          await auth.signOut();
+          return;
+        }
+      }
+
+      document.getElementById('authScreen').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      document.getElementById('settingsPanel')?.classList.add('hidden');
+
+      const av = document.getElementById('myAvatar');
+      av.textContent = initials(currentProfile.name);
+      av.style.background = hashColor(currentProfile.name);
+      av.title = currentProfile.name + ' (@' + currentProfile.username + ')';
+
+      subscribeChats();
+    } finally {
+      setLoading(false);
     }
-
-    document.getElementById('authScreen').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-
-    const av = document.getElementById('myAvatar');
-    av.textContent = initials(currentProfile.name);
-    av.style.background = hashColor(currentProfile.name);
-    av.title = currentProfile.name + ' (@' + currentProfile.username + ') — нажмите, чтобы выйти';
-
-    subscribeChats();
   } else {
     currentUser = null;
     currentProfile = null;
@@ -859,13 +956,31 @@ auth.onAuthStateChanged(async (user) => {
   }
 });
 
-document.getElementById('myAvatar').addEventListener('click', () => {
-  if (confirm('Выйти из аккаунта ' + (currentProfile?.name || '') + '?')) {
-    auth.signOut();
+/* ---------- SETTINGS ---------- */
+function openSettings() {
+  const panel = document.getElementById('settingsPanel');
+  if (!currentProfile) return;
+  document.getElementById('setAvatar').textContent = initials(currentProfile.name);
+  document.getElementById('setAvatar').style.background = hashColor(currentProfile.name);
+  document.getElementById('setName').textContent = currentProfile.name;
+  document.getElementById('setUsername').textContent = '@' + currentProfile.username;
+  document.getElementById('setEmail').textContent = currentProfile.email || '—';
+  panel.classList.remove('hidden');
+}
+function closeSettings() {
+  document.getElementById('settingsPanel').classList.add('hidden');
+}
+
+document.getElementById('myAvatar').addEventListener('click', openSettings);
+document.getElementById('closeSettings').addEventListener('click', closeSettings);
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  if (confirm('Выйти из аккаунта?')) {
+    closeSettings();
+    await auth.signOut();
   }
 });
 
-/* ---------- CHAT LIST ---------- */
+/* ---------- CHATS ---------- */
 function subscribeChats() {
   if (unsubChats) unsubChats();
   unsubChats = db.collection('chats')
@@ -878,30 +993,25 @@ function subscribeChats() {
         return tb - ta;
       });
       renderChatList();
-    }, err => console.error('chats listener error', err));
+    }, err => {
+      console.error('chats', err);
+      showToast('Ошибка загрузки чатов: ' + translateAuthError(err));
+    });
 }
 
 function renderChatList() {
   const listEl = document.getElementById('chatList');
   const filter = document.getElementById('searchInput').value.trim().toLowerCase();
   listEl.innerHTML = '';
-
   const filtered = allChats.filter(c => chatDisplayName(c).toLowerCase().includes(filter));
-
   if (filtered.length === 0) {
-    listEl.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text-2);font-size:14px;">Нет чатов</div>';
+    listEl.innerHTML = '<div class="search-empty">Нет чатов. Нажмите + чтобы начать</div>';
     return;
   }
-
   filtered.forEach(c => {
     const name = chatDisplayName(c);
-    let icon = '';
-    if (c.type === 'group') icon = '👥 ';
-    else if (c.type === 'channel') icon = '📢 ';
-
+    let icon = c.type === 'group' ? '👥 ' : c.type === 'channel' ? '📢 ' : '';
     let preview = c.lastMessage || 'Нет сообщений';
-    if (preview === '📷 Фото') preview = '📷 Фото';
-
     const item = el(`
       <div class="chat-item" data-id="${c.id}">
         <div class="chat-avatar" style="background:${hashColor(name)}">${initials(name)}</div>
@@ -920,7 +1030,6 @@ function renderChatList() {
     listEl.appendChild(item);
   });
 }
-
 document.getElementById('searchInput').addEventListener('input', renderChatList);
 
 function chatDisplayName(chat) {
@@ -936,9 +1045,9 @@ function openChat(chatId) {
   currentChatId = chatId;
   currentChat = allChats.find(c => c.id === chatId);
   if (!currentChat) return;
-
   pendingFiles = [];
   renderPreviewBar();
+  closeSettings();
 
   document.getElementById('emptyState').classList.add('hidden');
   document.getElementById('chatView').classList.remove('hidden');
@@ -951,14 +1060,9 @@ function openChat(chatId) {
   hAv.style.background = hashColor(name);
   document.getElementById('chatHeaderName').textContent = name;
 
-  let sub = '';
-  if (currentChat.type === 'group') {
-    sub = `Группа · ${currentChat.members.length} участн.`;
-  } else if (currentChat.type === 'channel') {
-    sub = `Канал · ${currentChat.members.length} подписчиков`;
-  } else {
-    sub = 'личный чат';
-  }
+  let sub = 'личный чат';
+  if (currentChat.type === 'group') sub = `Группа · ${currentChat.members.length} участн.`;
+  else if (currentChat.type === 'channel') sub = `Канал · ${currentChat.members.length} подписчиков`;
   document.getElementById('chatHeaderSub').textContent = sub;
 
   const isChannel = currentChat.type === 'channel';
@@ -975,48 +1079,36 @@ function openChat(chatId) {
     .onSnapshot(snap => {
       msgsEl.innerHTML = '';
       let lastTs = null;
-
       snap.forEach(doc => {
         const m = doc.data();
         if (!sameDay(lastTs, m.timestamp)) {
-          const sep = el(`<div class="date-sep">${fmtDateSep(m.timestamp)}</div>`);
-          msgsEl.appendChild(sep);
+          msgsEl.appendChild(el(`<div class="date-sep">${fmtDateSep(m.timestamp)}</div>`));
         }
         lastTs = m.timestamp;
-
         const own = m.senderId === currentUser.uid;
         const showSender = !own && currentChat.type !== 'private';
         const hasImage = !!m.imageUrl;
         const hasText = !!(m.text && m.text.trim());
-
         let bubbleInner = '';
-        if (hasImage) {
-          bubbleInner += `<img class="msg-img" src="${escapeHtml(m.imageUrl)}" alt="фото" loading="lazy">`;
-        }
-        if (hasText) {
-          bubbleInner += `<div class="msg-text">${escapeHtml(m.text)}</div>`;
-        }
-        if (!hasImage && !hasText) {
-          bubbleInner = '<div class="msg-text">(пусто)</div>';
-        }
-
+        if (hasImage) bubbleInner += `<img class="msg-img" src="${escapeHtml(m.imageUrl)}" alt="фото" loading="lazy">`;
+        if (hasText) bubbleInner += `<div class="msg-text">${escapeHtml(m.text)}</div>`;
+        if (!hasImage && !hasText) bubbleInner = '<div class="msg-text">(пусто)</div>';
         const row = el(`
           <div class="msg-row ${own ? 'own' : 'other'}">
             ${showSender ? `<div class="msg-sender">${escapeHtml(m.senderName)}</div>` : ''}
             <div class="msg-bubble ${hasImage ? 'has-image' : ''}">${bubbleInner}</div>
             <div class="msg-meta"><span class="msg-time">${fmtTime(m.timestamp)}</span></div>
           </div>`);
-
         if (hasImage) {
-          const img = row.querySelector('.msg-img');
-          img.addEventListener('click', () => openLightbox(m.imageUrl));
+          row.querySelector('.msg-img').addEventListener('click', () => openLightbox(m.imageUrl));
         }
-
         msgsEl.appendChild(row);
       });
-
       msgsEl.scrollTop = msgsEl.scrollHeight;
-    }, err => console.error('messages listener error', err));
+    }, err => {
+      console.error('messages', err);
+      showToast('Ошибка сообщений: ' + translateAuthError(err));
+    });
 }
 
 document.getElementById('backBtn').addEventListener('click', () => {
@@ -1027,18 +1119,13 @@ document.getElementById('backBtn').addEventListener('click', () => {
   document.getElementById('chatView').classList.add('hidden');
   document.getElementById('emptyState').classList.remove('hidden');
   document.getElementById('app').classList.remove('chat-open');
-  if (unsubMessages) {
-    unsubMessages();
-    unsubMessages = null;
-  }
+  if (unsubMessages) { unsubMessages(); unsubMessages = null; }
   renderChatList();
 });
 
-/* ---------- LIGHTBOX ---------- */
 function openLightbox(url) {
-  const lb = document.getElementById('lightbox');
   document.getElementById('lightboxImg').src = url;
-  lb.classList.remove('hidden');
+  document.getElementById('lightbox').classList.remove('hidden');
 }
 document.getElementById('lightboxClose').addEventListener('click', () => {
   document.getElementById('lightbox').classList.add('hidden');
@@ -1051,28 +1138,15 @@ document.getElementById('lightbox').addEventListener('click', (e) => {
   }
 });
 
-/* ---------- IMAGE ATTACH ---------- */
-document.getElementById('attachBtn').addEventListener('click', () => {
-  document.getElementById('fileInput').click();
-});
-
+/* ---------- IMAGES ---------- */
+document.getElementById('attachBtn').addEventListener('click', () => document.getElementById('fileInput').click());
 document.getElementById('fileInput').addEventListener('change', (e) => {
   const files = Array.from(e.target.files || []);
   e.target.value = '';
-
   for (const f of files) {
-    if (!f.type.startsWith('image/')) {
-      showToast('Можно только изображения');
-      continue;
-    }
-    if (f.size > MAX_IMAGE_SIZE) {
-      showToast('Файл больше 8 МБ');
-      continue;
-    }
-    if (pendingFiles.length >= MAX_IMAGES) {
-      showToast('Максимум 5 фото за раз');
-      break;
-    }
+    if (!f.type.startsWith('image/')) { showToast('Только изображения'); continue; }
+    if (f.size > MAX_IMAGE_SIZE) { showToast('Макс. 8 МБ'); continue; }
+    if (pendingFiles.length >= MAX_IMAGES) { showToast('Макс. 5 фото'); break; }
     pendingFiles.push(f);
   }
   renderPreviewBar();
@@ -1081,19 +1155,11 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
 function renderPreviewBar() {
   const bar = document.getElementById('previewBar');
   bar.innerHTML = '';
-  if (pendingFiles.length === 0) {
-    bar.classList.add('hidden');
-    return;
-  }
+  if (!pendingFiles.length) { bar.classList.add('hidden'); return; }
   bar.classList.remove('hidden');
-
   pendingFiles.forEach((file, idx) => {
     const url = URL.createObjectURL(file);
-    const item = el(`
-      <div class="preview-item">
-        <img src="${url}" alt="">
-        <button type="button" class="preview-rm" data-idx="${idx}">✕</button>
-      </div>`);
+    const item = el(`<div class="preview-item"><img src="${url}" alt=""><button type="button" class="preview-rm" data-idx="${idx}">✕</button></div>`);
     item.querySelector('.preview-rm').addEventListener('click', () => {
       pendingFiles.splice(idx, 1);
       renderPreviewBar();
@@ -1102,7 +1168,6 @@ function renderPreviewBar() {
   });
 }
 
-/* ---------- UPLOAD + SEND ---------- */
 async function uploadImage(file, chatId) {
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
   const path = `chats/${chatId}/${currentUser.uid}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
@@ -1115,30 +1180,19 @@ async function sendMessage() {
   const input = document.getElementById('msgInput');
   const text = input.value.trim();
   const files = [...pendingFiles];
-
-  if ((!text && files.length === 0) || !currentChatId) return;
-
+  if ((!text && !files.length) || !currentChatId) return;
   input.value = '';
   pendingFiles = [];
   renderPreviewBar();
   input.focus();
-
   const sendBtn = document.getElementById('sendBtn');
   sendBtn.disabled = true;
-
   try {
     const chatRef = db.collection('chats').doc(currentChatId);
-
-    if (files.length > 0) {
-      showToast(files.length === 1 ? 'Загрузка фото…' : `Загрузка ${files.length} фото…`);
-    }
-
-    // Send each image as its own message (Telegram-style)
+    if (files.length) showToast(files.length === 1 ? 'Загрузка фото…' : `Загрузка ${files.length} фото…`);
     for (let i = 0; i < files.length; i++) {
       const imageUrl = await uploadImage(files[i], currentChatId);
-      const isLast = i === files.length - 1;
-      const msgText = isLast && text ? text : '';
-
+      const msgText = (i === files.length - 1 && text) ? text : '';
       await chatRef.collection('messages').add({
         senderId: currentUser.uid,
         senderName: currentProfile.name,
@@ -1147,9 +1201,7 @@ async function sendMessage() {
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
       });
     }
-
-    // Text-only message
-    if (files.length === 0 && text) {
+    if (!files.length && text) {
       await chatRef.collection('messages').add({
         senderId: currentUser.uid,
         senderName: currentProfile.name,
@@ -1157,50 +1209,38 @@ async function sendMessage() {
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
       });
     }
-
-    // Update chat preview
     let lastPreview = text;
-    if (files.length > 0) {
-      lastPreview = text ? `📷 ${text}` : '📷 Фото';
-    }
-    if (lastPreview.length > 80) lastPreview = lastPreview.slice(0, 80) + '…';
-
+    if (files.length) lastPreview = text ? `📷 ${text}` : '📷 Фото';
+    if (lastPreview && lastPreview.length > 80) lastPreview = lastPreview.slice(0, 80) + '…';
     await chatRef.update({
       lastMessage: lastPreview || '📷 Фото',
       lastMessageTime: firebase.firestore.FieldValue.serverTimestamp()
     });
-
   } catch (err) {
-    console.error('send error', err);
-    showToast('Ошибка отправки: ' + (err.message || 'неизвестно'), 4000);
+    console.error('send', err);
+    showToast('Ошибка: ' + translateAuthError(err), 4000);
   } finally {
     sendBtn.disabled = false;
   }
 }
-
 document.getElementById('sendBtn').addEventListener('click', sendMessage);
 document.getElementById('msgInput').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
 
 /* ---------- NEW CHAT MODAL ---------- */
 const modal = document.getElementById('newChatModal');
-
 document.querySelector('.rail-btn[data-view="new"]').addEventListener('click', () => {
   modal.classList.remove('hidden');
   document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
   document.querySelector('.modal-tab[data-mtab="private"]').classList.add('active');
   document.querySelectorAll('.modal-pane').forEach(p => p.classList.add('hidden'));
   document.getElementById('pane-private').classList.remove('hidden');
+  document.getElementById('userSearchResults').innerHTML = '';
+  document.getElementById('userSearch').value = '';
 });
-
 document.getElementById('closeModal').addEventListener('click', () => modal.classList.add('hidden'));
-modal.addEventListener('click', (e) => {
-  if (e.target === modal) modal.classList.add('hidden');
-});
+modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
 
 document.querySelectorAll('.modal-tab').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -1211,40 +1251,40 @@ document.querySelectorAll('.modal-tab').forEach(tab => {
   });
 });
 
-/* --- private chat --- */
 let userSearchTimeout;
-
 document.getElementById('userSearch').addEventListener('input', (e) => {
   clearTimeout(userSearchTimeout);
-  const val = e.target.value.trim().toLowerCase();
+  const val = e.target.value.trim().toLowerCase().replace(/^@/, '');
   userSearchTimeout = setTimeout(() => searchUsers(val, 'userSearchResults', async (user) => {
     modal.classList.add('hidden');
     document.getElementById('userSearch').value = '';
     document.getElementById('userSearchResults').innerHTML = '';
     await startPrivateChat(user);
-  }), 280);
+  }), 250);
 });
 
 async function searchUsers(term, resultsElId, onPick) {
   const resultsEl = document.getElementById(resultsElId);
   resultsEl.innerHTML = '';
-  if (!term || term.length < 1) return;
-
+  if (!term || term.length < 1) {
+    resultsEl.innerHTML = '<div class="search-empty">Введите юзернейм (латиница)</div>';
+    return;
+  }
+  resultsEl.innerHTML = '<div class="search-empty">Поиск…</div>';
   try {
+    // prefix search on username
     const snap = await db.collection('users')
       .where('username', '>=', term)
       .where('username', '<=', term + '\uf8ff')
-      .limit(12)
+      .limit(15)
       .get();
 
-    if (snap.empty) {
-      resultsEl.innerHTML = '<div style="padding:12px;color:var(--text-2);font-size:13px;text-align:center;">Никого не найдено</div>';
-      return;
-    }
-
+    resultsEl.innerHTML = '';
+    let count = 0;
     snap.forEach(doc => {
       const u = doc.data();
       if (u.uid === currentUser.uid) return;
+      count++;
       const item = el(`
         <div class="search-result-item">
           <div class="sr-avatar" style="background:${hashColor(u.name)}">${initials(u.name)}</div>
@@ -1256,48 +1296,52 @@ async function searchUsers(term, resultsElId, onPick) {
       item.addEventListener('click', () => onPick(u));
       resultsEl.appendChild(item);
     });
+    if (count === 0) {
+      resultsEl.innerHTML = '<div class="search-empty">Никого не найдено.<br>Пользователь должен сначала зарегистрироваться.</div>';
+    }
   } catch (err) {
-    console.error('search error', err);
-    resultsEl.innerHTML = '<div style="padding:12px;color:var(--danger);font-size:13px;">Ошибка поиска</div>';
+    console.error('search', err);
+    let msg = translateAuthError(err);
+    if (String(err.message || '').includes('index')) {
+      msg = 'Нужен индекс Firestore. Открой ссылку из ошибки в консоли браузера (F12)';
+    }
+    resultsEl.innerHTML = `<div class="search-empty" style="color:var(--danger)">${escapeHtml(msg)}</div>`;
   }
 }
 
 async function startPrivateChat(otherUser) {
-  const uid1 = currentUser.uid;
-  const uid2 = otherUser.uid;
+  const uid1 = currentUser.uid, uid2 = otherUser.uid;
   const chatId = [uid1, uid2].sort().join('_');
   const chatRef = db.collection('chats').doc(chatId);
-  const doc = await chatRef.get();
-
-  if (!doc.exists) {
-    await chatRef.set({
-      type: 'private',
-      members: [uid1, uid2],
-      memberNames: {
-        [uid1]: currentProfile.name,
-        [uid2]: otherUser.name
-      },
-      lastMessage: '',
-      lastMessageTime: firebase.firestore.FieldValue.serverTimestamp()
-    });
+  try {
+    const doc = await chatRef.get();
+    if (!doc.exists) {
+      await chatRef.set({
+        type: 'private',
+        members: [uid1, uid2],
+        memberNames: { [uid1]: currentProfile.name, [uid2]: otherUser.name },
+        lastMessage: '',
+        lastMessageTime: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    openChat(chatId);
+  } catch (err) {
+    console.error(err);
+    showToast('Не удалось открыть чат: ' + translateAuthError(err));
   }
-  openChat(chatId);
 }
 
-/* --- group --- */
 let groupSelectedUsers = {};
-
 document.getElementById('groupUserSearch').addEventListener('input', (e) => {
   clearTimeout(userSearchTimeout);
-  const val = e.target.value.trim().toLowerCase();
+  const val = e.target.value.trim().toLowerCase().replace(/^@/, '');
   userSearchTimeout = setTimeout(() => searchUsers(val, 'groupSearchResults', (user) => {
     groupSelectedUsers[user.uid] = user;
     renderGroupChips();
     document.getElementById('groupUserSearch').value = '';
     document.getElementById('groupSearchResults').innerHTML = '';
-  }), 280);
+  }), 250);
 });
-
 function renderGroupChips() {
   const chipsEl = document.getElementById('groupSelected');
   chipsEl.innerHTML = '';
@@ -1310,19 +1354,15 @@ function renderGroupChips() {
     chipsEl.appendChild(chip);
   });
 }
-
 document.getElementById('createGroupBtn').addEventListener('click', async () => {
   const name = document.getElementById('groupName').value.trim();
-  if (!name) { alert('Введите название группы'); return; }
+  if (!name) { showToast('Введите название группы'); return; }
   const memberIds = [currentUser.uid, ...Object.keys(groupSelectedUsers)];
-  if (memberIds.length < 2) { alert('Добавьте хотя бы одного участника'); return; }
-
+  if (memberIds.length < 2) { showToast('Добавьте участника'); return; }
+  setLoading(true);
   try {
     const ref = await db.collection('chats').add({
-      type: 'group',
-      name,
-      members: memberIds,
-      admins: [currentUser.uid],
+      type: 'group', name, members: memberIds, admins: [currentUser.uid],
       lastMessage: `${currentProfile.name} создал(а) группу`,
       lastMessageTime: firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -1332,24 +1372,19 @@ document.getElementById('createGroupBtn').addEventListener('click', async () => 
     modal.classList.add('hidden');
     openChat(ref.id);
   } catch (err) {
-    console.error(err);
-    alert('Ошибка создания группы');
-  }
+    showToast(translateAuthError(err));
+  } finally { setLoading(false); }
 });
 
-/* --- channel --- */
 document.getElementById('createChannelBtn').addEventListener('click', async () => {
   const name = document.getElementById('channelName').value.trim();
   const desc = document.getElementById('channelDesc').value.trim();
-  if (!name) { alert('Введите название канала'); return; }
-
+  if (!name) { showToast('Введите название канала'); return; }
+  setLoading(true);
   try {
     const ref = await db.collection('chats').add({
-      type: 'channel',
-      name,
-      description: desc,
-      members: [currentUser.uid],
-      admins: [currentUser.uid],
+      type: 'channel', name, description: desc,
+      members: [currentUser.uid], admins: [currentUser.uid],
       lastMessage: `Канал «${name}» создан`,
       lastMessageTime: firebase.firestore.FieldValue.serverTimestamp()
     });
@@ -1358,9 +1393,8 @@ document.getElementById('createChannelBtn').addEventListener('click', async () =
     modal.classList.add('hidden');
     openChat(ref.id);
   } catch (err) {
-    console.error(err);
-    alert('Ошибка создания канала');
-  }
+    showToast(translateAuthError(err));
+  } finally { setLoading(false); }
 });
 
 </script>
