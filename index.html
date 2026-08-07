@@ -160,28 +160,86 @@
     <div id="adminScreen" class="overlay-screen hidden">
       <div class="screen-header">
         <button class="back-btn" id="closeAdmin" style="display:flex"><img src="assets/icons/back.svg" alt="back" width="20" height="20"></button>
-        <h2>Админка</h2>
-      </div>
-      <div class="screen-body" id="adminBody"></div>
-    </div>
-
-    <div id="nftScreen" class="overlay-screen hidden">
-      <div class="screen-header">
-        <button class="back-btn" id="closeNft" style="display:flex"><img src="assets/icons/back.svg" alt="back" width="20" height="20"></button>
-        <h2>NFT Маркет</h2>
+        <h2>Админ-панель</h2>
       </div>
       <div class="screen-body">
         <div class="settings-section">
-          <h3>Моя коллекция</h3>
-          <div class="nft-grid" id="myNftGrid"></div>
+          <h3>Выдать BlackCoin</h3>
+          <div class="admin-row">
+            <input type="text" id="adminGiveUser" placeholder="@username">
+            <input type="number" id="adminGiveAmount" placeholder="BC" style="width:80px">
+            <button class="btn-primary" id="adminGiveBtn" style="width:auto;padding:8px 14px">Выдать</button>
+          </div>
         </div>
         <div class="settings-section">
-          <h3>Маркет</h3>
-          <div class="nft-grid" id="marketNftGrid"></div>
+          <h3>Забрать BlackCoin</h3>
+          <div class="admin-row">
+            <input type="text" id="adminTakeUser" placeholder="@username">
+            <input type="number" id="adminTakeAmount" placeholder="BC" style="width:80px">
+            <button class="btn-danger" id="adminTakeBtn" style="width:auto;padding:8px 14px">Забрать</button>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h3>Premium</h3>
+          <div class="admin-row">
+            <input type="text" id="adminPremUser" placeholder="@username">
+            <input type="number" id="adminPremMonths" placeholder="мес" style="width:70px" value="1">
+            <button class="btn-primary" id="adminPremBtn" style="width:auto;padding:8px 14px">Выдать</button>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h3>Удалить / восстановить аккаунт</h3>
+          <div class="admin-row">
+            <input type="text" id="adminDelUser" placeholder="@username">
+            <button class="btn-danger" id="adminDelBtn" style="width:auto;padding:8px 14px">Удалить</button>
+          </div>
+          <div class="admin-row">
+            <input type="text" id="adminRestoreUser" placeholder="@username">
+            <button class="btn-primary" id="adminRestoreBtn" style="width:auto;padding:8px 14px">Восстановить</button>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h3>Создать NFT</h3>
+          <p style="font-size:12px;color:var(--text-2);margin-bottom:8px">Чем меньше ID — тем реже. ID выдаётся автоматически по порядку.</p>
+          <div class="profile-field"><label>Название</label><input type="text" id="nftName" maxlength="40"></div>
+          <div class="profile-field"><label>Описание</label><input type="text" id="nftDesc" maxlength="120"></div>
+          <div class="profile-field"><label>Цвет фона (css)</label><input type="text" id="nftBg" placeholder="#7c3aed или linear-gradient(...)" value="linear-gradient(135deg,#7c3aed,#ec4899)"></div>
+          <div class="profile-field"><label>Эмодзи / символ</label><input type="text" id="nftEmoji" placeholder="🐸" maxlength="4"></div>
+          <div class="profile-field"><label>URL картинки</label><input type="text" id="nftImage" placeholder="https://..."></div>
+          <div class="profile-field"><label>Или файл картинки</label><input type="file" id="nftImageFile" accept="image/*"></div>
+          <div class="profile-field"><label>Тираж (сколько штук)</label><input type="number" id="nftSupply" value="10" min="1" max="10000"></div>
+          <div class="profile-field"><label>Цена в BC (0 = не в маркете)</label><input type="number" id="nftPrice" value="50" min="0"></div>
+          <div class="admin-row">
+            <button class="btn-primary" id="nftCreateBtn" style="width:100%">Создать NFT</button>
+          </div>
+          <div class="admin-row">
+            <input type="text" id="nftGiveUser" placeholder="@username кому выдать">
+            <input type="number" id="nftGiveId" placeholder="ID NFT" style="width:90px">
+            <button class="btn-primary" id="nftGiveBtn" style="width:auto;padding:8px 14px">Выдать</button>
+          </div>
+          <div class="admin-row">
+            <input type="number" id="nftDeleteId" placeholder="ID NFT удалить" style="width:140px">
+            <button class="btn-danger" id="nftDeleteBtn" style="width:auto;padding:8px 14px">Удалить NFT</button>
+          </div>
+        </div>
+        <div class="settings-section">
+          <h3>Создать подарок (Gift)</h3>
+          <div class="profile-field"><label>Название</label><input type="text" id="giftName"></div>
+          <div class="profile-field"><label>Эмодзи (если без фото)</label><input type="text" id="giftEmoji" value="🎁" maxlength="4"></div>
+          <div class="profile-field"><label>Фон CSS</label><input type="text" id="giftBg" value="linear-gradient(135deg,#f59e0b,#ef4444)"></div>
+          <div class="profile-field"><label>URL картинки</label><input type="text" id="giftImageUrl" placeholder="https://..."></div>
+          <div class="profile-field"><label>Или файл</label><input type="file" id="giftImageFile" accept="image/*"></div>
+          <div class="profile-field"><label>Цена BC</label><input type="number" id="giftPrice" value="25"></div>
+          <button class="btn-primary" id="giftCreateBtn" style="width:100%">Создать подарок</button>
+        </div>
+        <div class="settings-section">
+          <h3>Рассылка</h3>
+          <div class="profile-field"><label>Сообщение всем (системное)</label><input type="text" id="adminBroadcast" maxlength="200"></div>
+          <button class="btn-primary" id="adminBroadcastBtn" style="width:100%">Отправить тост-рассылку (локально не шлёт — пишет в announcements)</button>
         </div>
       </div>
     </div>
-  </section>
+
 
   <main class="chat-panel">
     <div class="empty-state" id="emptyState">
