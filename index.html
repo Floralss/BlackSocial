@@ -74,6 +74,15 @@
       <div class="screen-body" id="profileBody"></div>
     </div>
 
+    <!-- PEER PROFILE (viewing someone else's profile) -->
+    <div id="userProfileScreen" class="overlay-screen hidden">
+      <div class="screen-header">
+        <button class="back-btn" id="closeUserProfile" style="display:flex"><img src="assets/icons/back.svg" alt="back" width="20" height="20"></button>
+        <h2>Профиль</h2>
+      </div>
+      <div class="screen-body" id="userProfileBody"></div>
+    </div>
+
     <!-- SETTINGS (Telegram-style hierarchical) -->
     <div id="settingsScreen" class="overlay-screen hidden">
       <div class="screen-header">
@@ -109,6 +118,14 @@
               <img src="assets/icons/blackvault.jpg" alt="BlackVault" class="pay-method-img">
               <span class="pay-method-name">BlackVault</span>
               <span class="pay-method-sub">Оплата с кошелька</span>
+            </button>
+            <button type="button" class="pay-method" data-pay="google" id="payMethodGoogle">
+              <span class="pay-method-gpay">GPay</span>
+              <span class="pay-method-name">Google Pay</span>
+              <span class="pay-method-sub">Карта через Google</span>
+            </button>
+          </div>
+          <div id="vaultLoginBox" class="vault-login-box hidden">
             <div class="profile-field"><label>Email BlackVault</label><input type="email" id="vaultEmail" autocomplete="username" placeholder="email@..."></div>
             <div class="profile-field"><label>Пароль</label><input type="password" id="vaultPassword" autocomplete="current-password"></div>
           </div>
